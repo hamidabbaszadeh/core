@@ -1,6 +1,239 @@
 Contao Open Source CMS changelog
 ================================
 
+Version 3.5.6 (2015-11-27)
+--------------------------
+
+### Fixed
+Correctly determin the protocol delimiter in `Idna::encodeUrl()`.
+
+### Fixed
+Handle relative URLs when following redirects in the Request class (see #7799).
+
+### Fixed
+Correctly handle empty UUIDs when comparing versions (see #7971).
+
+### Fixed
+Remove the "required" attribute when setting up TinyMCE (see #8131).
+
+
+Version 3.5.5 (2015-11-25)
+--------------------------
+
+### Fixed
+Fix the domain when forwarding in the page controllers (see #8123).
+
+### Fixed
+Use the feed URL instead of the base URL for enclosures (see #8116).
+
+### Fixed
+Fix the `<time>` tags and standardize the event templates (see #8012).
+
+### Fixed
+Handle empty `href` attributes in the book navigation (see #8104).
+
+### Fixed
+Do not store e-mail addresses in the newsletter (un)subscription log. 
+
+### Fixed
+Correctly encrypt fields upon registration (see #8110).
+
+### Fixed
+Correctly render required single checkboxes in the back end (see #7731).
+
+### Fixed
+Correctly store multi select menus if no value is selected (see #7760).
+
+### Fixed
+Prevent recursion when rendering 403/404 pages (see #8060).
+
+### Fixed
+Map the `FileTree` widget to `FormFileUpload` in the front end (see #8091).
+
+### Fixed
+Preserve the user input when loading image meta data (see #8108).
+
+### Fixed
+Show the "toggle all" buttons in "edit multiple" mode (see #5622).
+
+### Fixed
+Disable the gallery pagination if the images are sorted randomly (see #8033).
+
+### Fixed
+Set the correct empty value when copying elements (see #8064).
+
+### Fixed
+Correctly hide forward pages with no public subpages (see #8054).
+
+### Fixed
+Correctly render the page picker if the value starts with `#` (see #8055).
+
+### Fixed
+Correctly render the "group" option in the radio button and checkbox widgets.
+
+### Fixed
+Correctly set the ID when toggling fields via Ajax (see #8043).
+
+### Fixed
+Support call, sms and app hyperlinks when converting relative URLs (see #8102).
+
+### Fixed
+Correctly check if a folder is protected when loading subfolders.
+
+### Fixed
+Correctly check the synchronization status when copying or moving files.
+
+### Fixed
+Adjust the code to be compatible with PHP7 (see #8018).
+
+### Fixed
+Correctly show the UUID in the back end file manager popup (see #8058). 
+
+
+Version 3.5.4 (2015-10-09)
+--------------------------
+
+### Fixed
+Do not add the back end language in the meta wizard (see #8056).
+
+### Fixed
+Do not add excluded files to the DBAFS if they are edited in the file manager.
+
+### Fixed
+Add the `|flatten` insert tag flag to handle arrays (see #8021).
+
+### Fixed
+Check for excluded folders in the back end file popup (see #8003).
+
+### Fixed
+Fixed a wrong option name when initializing sortables (see #8053).
+
+### Fixed
+Translate UUIDs to paths in the parent view header fields.
+
+### Fixed
+Trigger the options_callback for the parent view header fields (see #8031).
+
+### Fixed
+Correctly create the initial version of a member without username (see #8037).
+
+### Fixed
+Improve the performance of the debug bar (see #7839).
+
+### Fixed
+Correctly output the event details in the `event_list` template (see #8041).
+
+### Fixed
+Only modify empty `href` attributes in the `nav_` template (see #8006, #8038).
+
+### Fixed
+Correctly show the group headlines in the repository DB updater (see #8020).
+
+### Fixed
+Improve the e-mail regex to also match the new TLDs (see #7984).
+
+### Fixed
+Ensure that the database port is not empty (see #7950).
+
+### Fixed
+Remove the left-over usages of `$this->v2warning` (see #8027).
+
+### Fixed
+Support the `hasDetails` variable in the event reader (see #8011).
+
+
+Version 3.5.3 (2015-09-10)
+--------------------------
+
+### Fixed
+Correctly handle dimensionless SVG images (see #7882).
+
+### Fixed
+Correctly fill in the image meta data in news, events and FAQs (see #7907).
+
+### Fixed
+Enable the `strictMath` option of the LESS parser (see #7985).
+
+### Fixed
+Consider the pagination menu when inserting at the top (see #7895).
+
+### Fixed
+Use en-dashes in event intervals (see #7978).
+
+### Fixed
+Store the correct edit URL in the back end personal data module (see #7987).
+
+### Fixed
+Adjust the breadcrumb trail when creating new folders (see #7980).
+
+### Fixed
+Use `$this->hasText` in news and event templates (see #7993).
+
+### Fixed
+Convert the HTML content to XHTML when generating Atom feeds (see #7996).
+
+### Fixed
+Correctly link the items in the files breadcrumb menu (see #7965).
+
+### Fixed
+Handle explicit collations matching the default collation (see #7979).
+
+### Fixed
+Fix the duplicate content check in the front end controller (see #7661).
+
+### Fixed
+Correctly parse dates in MooTools (see #7983).
+
+### Fixed
+Register the related models in the registry (see contao/core-bundle#333).
+
+### Fixed
+Correctly escape in the `findMultipleFilesByFolder()` method (see #7966).
+
+### Fixed
+Override the tabindex handling of the accordion to ensure that the togglers are
+always focusable via keyboard (see #7963).
+
+### Fixed
+Correctly generate the news and event menu URLs (see #7953).
+
+### Fixed
+Check the script when storing the front end referer (see #7908).
+
+### Fixed
+Fix the back end pagination menu (see #7956).
+
+### Fixed
+Handle option callbacks in the back end help (see #7951).
+
+### Fixed
+Fixed the external links in the text field help wizard (see #7954) and the
+keyboard shortcuts link on the back end start page (see #7935).
+
+### Fixed
+Fixed the CSS group field explanations (see #7949).
+
+### Fixed
+Use ./ instead of an empty href (see #7967).
+
+### Fixed
+Correctly detect Microsoft Edge (see #7970).
+
+### Fixed
+Respect the "order" parameter in the `findMultipleByIds()` method (see #7940).
+
+### Fixed
+Always trigger the "parseDate" hook (see #4260).
+
+### Fixed
+Allow to instantiate the `InsertTags` class (see #7946).
+
+### Fixed
+Do not parse the image `src` attribute to determine the state of an element,
+because the image path might have been replaced with a `data:` string (e.g. by
+the Apache module "mod_pagespeed").
+
+
 Version 3.5.2 (2015-07-24)
 --------------------------
 
@@ -18,7 +251,7 @@ Add a `StringUtil` class to restore PHP 7 compatibility (see contao/core-bundle#
 Fix the `Validator::isEmail()` method (see contao/core-bundle#313).
 
 ### Fixed
-Strip tags before auto-generating aliases (see #7857). 
+Strip tags before auto-generating aliases (see #7857).
 
 ### Fixed
 Correctly encode the URLs in the popup file manager (see #7929).
@@ -180,7 +413,7 @@ Check for ASCII strings in the `utf8_romanize()` function (see #7748).
 `Controller::replaceInsertTags()` is now public static.
 
 ### Fixed
-Restore the removed attributes of the "picture_default" templates (see #7752). 
+Restore the removed attributes of the "picture_default" templates (see #7752).
 
 ### Changed
 Moved the insert tag logic into a separate class.
@@ -189,7 +422,7 @@ Moved the insert tag logic into a separate class.
 Show the upload limits in the file manager (see #7389).
 
 ### Improved
-Also export the image meta data when exporting themes (see #7480). 
+Also export the image meta data when exporting themes (see #7480).
 
 ### Improved
 Improve the model registry (see #7725).
@@ -241,7 +474,7 @@ Updated HTML5Shiv to version 3.7.2.
 Updated DropZone to version 3.12.0.
 
 ### Updated
-Updated the ACE editor to version 1.1.8.
+Updated the Ace code editor to version 1.1.8.
 
 ### Improved
 Also convert image links in TinyMCE to `{{file}}` insert tags (see #7581).

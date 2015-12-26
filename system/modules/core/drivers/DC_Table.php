@@ -204,7 +204,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				if (is_array($callback))
 				{
 					$this->import($callback[0]);
-					$this->$callback[0]->$callback[1]($this);
+					$this->{$callback[0]}->{$callback[1]}($this);
 				}
 				elseif (is_callable($callback))
 				{
@@ -702,7 +702,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$this->$callback[0]->$callback[1]($this->strTable, $insertID, $this->set, $this);
+							$this->{$callback[0]}->{$callback[1]}($this->strTable, $insertID, $this->set, $this);
 						}
 						elseif (is_callable($callback))
 						{
@@ -796,7 +796,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				if (is_array($callback))
 				{
 					$this->import($callback[0]);
-					$this->$callback[0]->$callback[1]($this);
+					$this->{$callback[0]}->{$callback[1]}($this);
 				}
 				elseif (is_callable($callback))
 				{
@@ -871,10 +871,16 @@ class DC_Table extends \DataContainer implements \listable, \editable
 			{
 				if (in_array($k, array_keys($GLOBALS['TL_DCA'][$this->strTable]['fields'])))
 				{
-					// Empty unique fields or add a unique identifier in copyAll mode
-					if ($GLOBALS['TL_DCA'][$this->strTable]['fields'][$k]['eval']['unique'])
+					// Never copy passwords
+					if ($GLOBALS['TL_DCA'][$this->strTable]['fields'][$k]['inputType'] == 'password')
 					{
-						$v = (\Input::get('act') == 'copyAll') ? $v .'-'. substr(md5(uniqid(mt_rand(), true)), 0, 8) : '';
+						$v = \Widget::getEmptyValueByFieldType($GLOBALS['TL_DCA'][$this->strTable]['fields'][$k]['sql']);
+					}
+
+					// Empty unique fields or add a unique identifier in copyAll mode
+					elseif ($GLOBALS['TL_DCA'][$this->strTable]['fields'][$k]['eval']['unique'])
+					{
+						$v = (\Input::get('act') == 'copyAll') ? $v .'-'. substr(md5(uniqid(mt_rand(), true)), 0, 8) : \Widget::getEmptyValueByFieldType($GLOBALS['TL_DCA'][$this->strTable]['fields'][$k]['sql']);
 					}
 
 					// Reset doNotCopy and fallback fields to their default value
@@ -895,8 +901,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						}
 					}
 
-					// Set fields (except password fields)
-					$this->set[$k] = ($GLOBALS['TL_DCA'][$this->strTable]['fields'][$k]['inputType'] == 'password' ? '' : $v);
+					$this->set[$k] = $v;
 				}
 			}
 
@@ -990,7 +995,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$this->$callback[0]->$callback[1]($insertID, $this);
+							$this->{$callback[0]}->{$callback[1]}($insertID, $this);
 						}
 						elseif (is_callable($callback))
 						{
@@ -1084,8 +1089,20 @@ class DC_Table extends \DataContainer implements \listable, \editable
 							continue;
 						}
 
-						// Reset all unique, doNotCopy and fallback fields to their default value
-						if ($GLOBALS['TL_DCA'][$v]['fields'][$kk]['eval']['unique'] || $GLOBALS['TL_DCA'][$v]['fields'][$kk]['eval']['doNotCopy'] || $GLOBALS['TL_DCA'][$v]['fields'][$kk]['eval']['fallback'])
+						// Never copy passwords
+						if ($GLOBALS['TL_DCA'][$v]['fields'][$kk]['inputType'] == 'password')
+						{
+							$vv = \Widget::getEmptyValueByFieldType($GLOBALS['TL_DCA'][$v]['fields'][$kk]['sql']);
+						}
+
+						// Empty unique fields or add a unique identifier in copyAll mode
+						elseif ($GLOBALS['TL_DCA'][$v]['fields'][$kk]['eval']['unique'])
+						{
+							$vv = (\Input::get('act') == 'copyAll') ? $vv .'-'. substr(md5(uniqid(mt_rand(), true)), 0, 8) : \Widget::getEmptyValueByFieldType($GLOBALS['TL_DCA'][$v]['fields'][$kk]['sql']);
+						}
+
+						// Reset doNotCopy and fallback fields to their default value
+						elseif ($GLOBALS['TL_DCA'][$v]['fields'][$kk]['eval']['doNotCopy'] || $GLOBALS['TL_DCA'][$v]['fields'][$kk]['eval']['fallback'])
 						{
 							$vv = '';
 
@@ -1188,6 +1205,27 @@ class DC_Table extends \DataContainer implements \listable, \editable
 			{
 				$newPID = null;
 				$newSorting = null;
+				$session = $this->Session->getData();
+				$filter = ($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['mode'] == 4) ? $this->strTable.'_'.CURRENT_ID : $this->strTable;
+
+				// Consider the pagination menu when inserting at the top (see #7895)
+				if ($insertInto && isset($session['filter'][$filter]['limit']))
+				{
+					$limit = substr($session['filter'][$filter]['limit'], 0, strpos($session['filter'][$filter]['limit'], ','));
+
+					if ($limit > 0)
+					{
+						$objInsertAfter = $this->Database->prepare("SELECT id FROM " . $this->strTable . " WHERE pid=? ORDER BY sorting" )
+														 ->limit(1, $limit - 1)
+														 ->execute($pid);
+
+						if ($objInsertAfter->numRows)
+						{
+							$insertInto = false;
+							$pid = $objInsertAfter->id;
+						}
+					}
+				}
 
 				// Insert the current record at the beginning when inserting into the parent record
 				if ($insertInto)
@@ -1486,7 +1524,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($callback))
 					{
 						$this->import($callback[0]);
-						$this->$callback[0]->$callback[1]($this, $insertID);
+						$this->{$callback[0]}->{$callback[1]}($this, $insertID);
 					}
 					elseif (is_callable($callback))
 					{
@@ -1660,7 +1698,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$this->$callback[0]->$callback[1]($table, $row, $this);
+							$this->{$callback[0]}->{$callback[1]}($table, $row, $this);
 						}
 						elseif (is_callable($callback))
 						{
@@ -1891,7 +1929,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 							if (is_array($callback))
 							{
 								$this->import($callback[0]);
-								$this->varValue = $this->$callback[0]->$callback[1]($this->varValue, $this);
+								$this->varValue = $this->{$callback[0]}->{$callback[1]}($this->varValue, $this);
 							}
 							elseif (is_callable($callback))
 							{
@@ -1953,7 +1991,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				if (is_array($callback))
 				{
 					$this->import($callback[0]);
-					$arrButtons = $this->$callback[0]->$callback[1]($arrButtons, $this);
+					$arrButtons = $this->{$callback[0]}->{$callback[1]}($arrButtons, $this);
 				}
 				elseif (is_callable($callback))
 				{
@@ -2009,7 +2047,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($callback))
 					{
 						$this->import($callback[0]);
-						$this->$callback[0]->$callback[1]($this);
+						$this->{$callback[0]}->{$callback[1]}($this);
 					}
 					elseif (is_callable($callback))
 					{
@@ -2031,7 +2069,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$this->$callback[0]->$callback[1]($this->strTable, $this->intId, $this);
+							$this->{$callback[0]}->{$callback[1]}($this->strTable, $this->intId, $this);
 						}
 						elseif (is_callable($callback))
 						{
@@ -2318,7 +2356,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 							if (is_array($callback))
 							{
 								$this->import($callback[0]);
-								$this->varValue = $this->$callback[0]->$callback[1]($this->varValue, $this);
+								$this->varValue = $this->{$callback[0]}->{$callback[1]}($this->varValue, $this);
 							}
 							elseif (is_callable($callback))
 							{
@@ -2350,7 +2388,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 							if (is_array($callback))
 							{
 								$this->import($callback[0]);
-								$this->$callback[0]->$callback[1]($this);
+								$this->{$callback[0]}->{$callback[1]}($this);
 							}
 							elseif (is_callable($callback))
 							{
@@ -2372,7 +2410,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 								if (is_array($callback))
 								{
 									$this->import($callback[0]);
-									$this->$callback[0]->$callback[1]($this->strTable, $this->intId, $this);
+									$this->{$callback[0]}->{$callback[1]}($this->strTable, $this->intId, $this);
 								}
 								elseif (is_callable($callback))
 								{
@@ -2411,7 +2449,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($callback))
 					{
 						$this->import($callback[0]);
-						$arrButtons = $this->$callback[0]->$callback[1]($arrButtons, $this);
+						$arrButtons = $this->{$callback[0]}->{$callback[1]}($arrButtons, $this);
 					}
 					elseif (is_callable($callback))
 					{
@@ -2633,7 +2671,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 								if (is_array($callback))
 								{
 									$this->import($callback[0]);
-									$this->$callback[0]->$callback[1]($this);
+									$this->{$callback[0]}->{$callback[1]}($this);
 								}
 								elseif (is_callable($callback))
 								{
@@ -2655,7 +2693,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 									if (is_array($callback))
 									{
 										$this->import($callback[0]);
-										$this->$callback[0]->$callback[1]($this->strTable, $this->intId, $this);
+										$this->{$callback[0]}->{$callback[1]}($this->strTable, $this->intId, $this);
 									}
 									elseif (is_callable($callback))
 									{
@@ -2735,7 +2773,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($callback))
 					{
 						$this->import($callback[0]);
-						$arrButtons = $this->$callback[0]->$callback[1]($arrButtons, $this);
+						$arrButtons = $this->{$callback[0]}->{$callback[1]}($arrButtons, $this);
 					}
 					elseif (is_callable($callback))
 					{
@@ -2909,7 +2947,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$old = $this->$callback[0]->$callback[1]($old, $this);
+							$old = $this->{$callback[0]}->{$callback[1]}($old, $this);
 						}
 						elseif (is_callable($callback))
 						{
@@ -2962,7 +3000,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				if (is_array($callback))
 				{
 					$this->import($callback[0]);
-					$varValue = $this->$callback[0]->$callback[1]($varValue, $this);
+					$varValue = $this->{$callback[0]}->{$callback[1]}($varValue, $this);
 				}
 				elseif (is_callable($callback))
 				{
@@ -3144,7 +3182,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				if (is_array($callback))
 				{
 					$this->import($callback[0]);
-					$status = $this->$callback[0]->$callback[1]($this->strTable, $new_records[$this->strTable], $ptable, $ctable);
+					$status = $this->{$callback[0]}->{$callback[1]}($this->strTable, $new_records[$this->strTable], $ptable, $ctable);
 				}
 				elseif (is_callable($callback))
 				{
@@ -3309,7 +3347,8 @@ class DC_Table extends \DataContainer implements \listable, \editable
 <div id="tl_buttons">'.((\Input::get('act') == 'select') ? '
 <a href="'.$this->getReferer(true).'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a> ' : (isset($GLOBALS['TL_DCA'][$this->strTable]['config']['backlink']) ? '
 <a href="contao/main.php?'.$GLOBALS['TL_DCA'][$this->strTable]['config']['backlink'].'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a> ' : '')) . ((\Input::get('act') != 'select' && !$blnClipboard && !$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] && !$GLOBALS['TL_DCA'][$this->strTable]['config']['notCreatable']) ? '
-<a href="'.$this->addToUrl('act=paste&amp;mode=create').'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['new'][1]).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['new'][0].'</a> ' : '') . ((\Input::get('act') != 'select' && !$blnClipboard) ? $this->generateGlobalButtons() : '') . ($blnClipboard ? '<a href="'.$this->addToUrl('clipboard=1').'" class="header_clipboard" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['clearClipboard']).'" accesskey="x">'.$GLOBALS['TL_LANG']['MSC']['clearClipboard'].'</a> ' : '') . '
+<a href="'.$this->addToUrl('act=paste&amp;mode=create').'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['new'][1]).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['new'][0].'</a> ' : '') . ($blnClipboard ? '
+<a href="'.$this->addToUrl('clipboard=1').'" class="header_clipboard" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['clearClipboard']).'" accesskey="x">'.$GLOBALS['TL_LANG']['MSC']['clearClipboard'].'</a> ' : $this->generateGlobalButtons()) . '
 </div>' . \Message::generate(true);
 
 		$tree = '';
@@ -3479,7 +3518,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($callback))
 					{
 						$this->import($callback[0]);
-						$arrButtons = $this->$callback[0]->$callback[1]($arrButtons, $this);
+						$arrButtons = $this->{$callback[0]}->{$callback[1]}($arrButtons, $this);
 					}
 					elseif (is_callable($callback))
 					{
@@ -3869,8 +3908,9 @@ class DC_Table extends \DataContainer implements \listable, \editable
 		$return = '
 <div id="tl_buttons">' . (\Input::get('nb') ? '&nbsp;' : ($this->ptable ? '
 <a href="'.$this->getReferer(true, $this->ptable).'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a>' : (isset($GLOBALS['TL_DCA'][$this->strTable]['config']['backlink']) ? '
-<a href="contao/main.php?'.$GLOBALS['TL_DCA'][$this->strTable]['config']['backlink'].'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a>' : ''))) . ' ' . (!$blnClipboard ? ((\Input::get('act') != 'select') ? ((!$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] && !$GLOBALS['TL_DCA'][$this->strTable]['config']['notCreatable']) ? '
-<a href="'.$this->addToUrl(($blnHasSorting ? 'act=paste&amp;mode=create' : 'act=create&amp;mode=2&amp;pid='.$this->intId)).'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['new'][1]).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['new'][0].'</a> ' : '') . $this->generateGlobalButtons() : '') : '<a href="'.$this->addToUrl('clipboard=1').'" class="header_clipboard" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['clearClipboard']).'" accesskey="x">'.$GLOBALS['TL_LANG']['MSC']['clearClipboard'].'</a> ') . '
+<a href="contao/main.php?'.$GLOBALS['TL_DCA'][$this->strTable]['config']['backlink'].'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a>' : ''))) . ' ' . ((\Input::get('act') != 'select' && !$blnClipboard && !$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] && !$GLOBALS['TL_DCA'][$this->strTable]['config']['notCreatable']) ? '
+<a href="'.$this->addToUrl(($blnHasSorting ? 'act=paste&amp;mode=create' : 'act=create&amp;mode=2&amp;pid='.$this->intId)).'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['new'][1]).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['new'][0].'</a> ' : '') . ($blnClipboard ? '
+<a href="'.$this->addToUrl('clipboard=1').'" class="header_clipboard" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['clearClipboard']).'" accesskey="x">'.$GLOBALS['TL_LANG']['MSC']['clearClipboard'].'</a> ' : $this->generateGlobalButtons()) . '
 </div>' . \Message::generate(true);
 
 		// Get all details of the parent record
@@ -3921,6 +3961,17 @@ class DC_Table extends \DataContainer implements \listable, \editable
 			foreach ($headerFields as $v)
 			{
 				$_v = deserialize($objParent->$v);
+
+				// Translate UUIDs to paths
+				if ($GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['inputType'] == 'fileTree')
+				{
+					$objFiles = \FilesModel::findMultipleByUuids((array) $_v);
+
+					if ($objFiles !== null)
+					{
+						$_v = $objFiles->fetchEach('path');
+					}
+				}
 
 				if (is_array($_v))
 				{
@@ -3989,6 +4040,22 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				elseif ($GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['eval']['isAssociative'] || array_is_assoc($GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options']))
 				{
 					$_v = $GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options'][$_v];
+				}
+				elseif (is_array($GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options_callback']))
+				{
+					$strClass = $GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options_callback'][0];
+					$strMethod = $GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options_callback'][1];
+
+					$this->import($strClass);
+					$options_callback = $this->$strClass->$strMethod($this);
+
+					$_v = $options_callback[$_v];
+				}
+				elseif (is_callable($GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options_callback']))
+				{
+					$options_callback = $GLOBALS['TL_DCA'][$this->ptable]['fields'][$v]['options_callback']($this);
+
+					$_v = $options_callback[$_v];
 				}
 
 				// Add the sorting field
@@ -4313,7 +4380,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($callback))
 					{
 						$this->import($callback[0]);
-						$arrButtons = $this->$callback[0]->$callback[1]($arrButtons, $this);
+						$arrButtons = $this->{$callback[0]}->{$callback[1]}($arrButtons, $this);
 					}
 					elseif (is_callable($callback))
 					{
@@ -4453,8 +4520,8 @@ class DC_Table extends \DataContainer implements \listable, \editable
 
 <div id="'.$this->bid.'">'.((\Input::get('act') == 'select' || $this->ptable) ? '
 <a href="'.$this->getReferer(true, $this->ptable).'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a> ' : (isset($GLOBALS['TL_DCA'][$this->strTable]['config']['backlink']) ? '
-<a href="contao/main.php?'.$GLOBALS['TL_DCA'][$this->strTable]['config']['backlink'].'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a> ' : '')) . ((\Input::get('act') != 'select') ? '
-'.((!$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] && !$GLOBALS['TL_DCA'][$this->strTable]['config']['notCreatable']) ? '<a href="'.(($this->ptable != '') ? $this->addToUrl('act=create' . (($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['mode'] < 4) ? '&amp;mode=2' : '') . '&amp;pid=' . $this->intId) : $this->addToUrl('act=create')).'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['new'][1]).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['new'][0].'</a> ' : '') . $this->generateGlobalButtons() : '') . '
+<a href="contao/main.php?'.$GLOBALS['TL_DCA'][$this->strTable]['config']['backlink'].'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a> ' : '')) . ((\Input::get('act') != 'select' && !$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] && !$GLOBALS['TL_DCA'][$this->strTable]['config']['notCreatable']) ? '
+<a href="'.(($this->ptable != '') ? $this->addToUrl('act=create' . (($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['mode'] < 4) ? '&amp;mode=2' : '') . '&amp;pid=' . $this->intId) : $this->addToUrl('act=create')).'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['new'][1]).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['new'][0].'</a> ' : '') . $this->generateGlobalButtons() . '
 </div>' . \Message::generate(true);
 		}
 
@@ -4494,7 +4561,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				{
 					if (strpos($f, ':') !== false)
 					{
-						list($f,) = explode(':', $f, 2);
+						list($f) = explode(':', $f, 2);
 					}
 
 					if ($firstOrderBy == $f)
@@ -4520,7 +4587,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 				{
 					if (strpos($f, ':') !== false)
 					{
-						list($f,) = explode(':', $f, 2);
+						list($f) = explode(':', $f, 2);
 					}
 
 					$return .= '
@@ -4737,7 +4804,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$arrButtons = $this->$callback[0]->$callback[1]($arrButtons, $this);
+							$arrButtons = $this->{$callback[0]}->{$callback[1]}($arrButtons, $this);
 						}
 						elseif (is_callable($callback))
 						{
@@ -4808,7 +4875,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 					if (is_array($arrCallback))
 					{
 						$this->import($arrCallback[0]);
-						$panel = $this->$arrCallback[0]->$arrCallback[1]($this);
+						$panel = $this->{$arrCallback[0]}->{$arrCallback[1]}($this);
 					}
 					elseif (is_callable($arrCallback))
 					{
@@ -5555,7 +5622,7 @@ class DC_Table extends \DataContainer implements \listable, \editable
 
 						if ($objShowFields->numRows)
 						{
-							$vv = $objShowFields->$showFields[0];
+							$vv = $objShowFields->{$showFields[0]};
 						}
 					}
 

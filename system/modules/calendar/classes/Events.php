@@ -179,7 +179,7 @@ abstract class Events extends \Module
 			foreach ($GLOBALS['TL_HOOKS']['getAllEvents'] as $callback)
 			{
 				$this->import($callback[0]);
-				$this->arrEvents = $this->$callback[0]->$callback[1]($this->arrEvents, $arrCalendars, $intStart, $intEnd, $this);
+				$this->arrEvents = $this->{$callback[0]}->{$callback[1]}($this->arrEvents, $arrCalendars, $intStart, $intEnd, $this);
 			}
 		}
 
@@ -219,7 +219,7 @@ abstract class Events extends \Module
 
 		if ($span > 0)
 		{
-			$strDate = \Date::parse($objPage->dateFormat, $intStart) . ' - ' . \Date::parse($objPage->dateFormat, $intEnd);
+			$strDate = \Date::parse($objPage->dateFormat, $intStart) . ' – ' . \Date::parse($objPage->dateFormat, $intEnd);
 			$strDay = '';
 		}
 
@@ -229,7 +229,7 @@ abstract class Events extends \Module
 		{
 			if ($span > 0)
 			{
-				$strDate = \Date::parse($objPage->datimFormat, $intStart) . ' - ' . \Date::parse($objPage->datimFormat, $intEnd);
+				$strDate = \Date::parse($objPage->datimFormat, $intStart) . ' – ' . \Date::parse($objPage->datimFormat, $intEnd);
 			}
 			elseif ($intStart == $intEnd)
 			{
@@ -237,7 +237,23 @@ abstract class Events extends \Module
 			}
 			else
 			{
-				$strTime = \Date::parse($objPage->timeFormat, $intStart) . ' - ' . \Date::parse($objPage->timeFormat, $intEnd);
+				$strTime = \Date::parse($objPage->timeFormat, $intStart) . ' – ' . \Date::parse($objPage->timeFormat, $intEnd);
+			}
+		}
+
+		$until = '';
+		$recurring = '';
+
+		// Recurring event
+		if ($objEvents->recurring)
+		{
+			$arrRange = deserialize($objEvents->repeatEach);
+			$strKey = 'cal_' . $arrRange['unit'];
+			$recurring = sprintf($GLOBALS['TL_LANG']['MSC'][$strKey], $arrRange['value']);
+
+			if ($objEvents->recurrences > 0)
+			{
+				$until = sprintf($GLOBALS['TL_LANG']['MSC']['cal_until'], \Date::parse($objPage->dateFormat, $objEvents->repeatEnd));
 			}
 		}
 
@@ -245,8 +261,9 @@ abstract class Events extends \Module
 		$arrEvent = $objEvents->row();
 
 		// Overwrite some settings
-		$arrEvent['time'] = $strTime;
 		$arrEvent['date'] = $strDate;
+		$arrEvent['time'] = $strTime;
+		$arrEvent['datetime'] = $objEvents->addTime ? date('Y-m-d\TH:i:sP', $intStart) : date('Y-m-d', $intStart);
 		$arrEvent['day'] = $strDay;
 		$arrEvent['month'] = $strMonth;
 		$arrEvent['parent'] = $intCalendar;
@@ -256,9 +273,13 @@ abstract class Events extends \Module
 		$arrEvent['title'] = specialchars($objEvents->title, true);
 		$arrEvent['href'] = $this->generateEventUrl($objEvents, $strUrl);
 		$arrEvent['class'] = ($objEvents->cssClass != '') ? ' ' . $objEvents->cssClass : '';
+		$arrEvent['recurring'] = $recurring;
+		$arrEvent['until'] = $until;
 		$arrEvent['begin'] = $intStart;
 		$arrEvent['end'] = $intEnd;
 		$arrEvent['details'] = '';
+		$arrEvent['hasDetails'] = false;
+		$arrEvent['hasTeaser'] = false;
 
 		// Override the link target
 		if ($objEvents->source == 'external' && $objEvents->target)
@@ -269,6 +290,8 @@ abstract class Events extends \Module
 		// Clean the RTE output
 		if ($arrEvent['teaser'] != '')
 		{
+			$arrEvent['hasTeaser'] = true;
+
 			if ($objPage->outputFormat == 'xhtml')
 			{
 				$arrEvent['teaser'] = \StringUtil::toXhtml($arrEvent['teaser']);
@@ -277,12 +300,15 @@ abstract class Events extends \Module
 			{
 				$arrEvent['teaser'] = \StringUtil::toHtml5($arrEvent['teaser']);
 			}
+
+			$arrEvent['teaser'] = \StringUtil::encodeEmail($arrEvent['teaser']);
 		}
 
 		// Display the "read more" button for external/article links
 		if ($objEvents->source != 'default')
 		{
 			$arrEvent['details'] = true;
+			$arrEvent['hasDetails'] = true;
 		}
 
 		// Compile the event text
@@ -305,6 +331,8 @@ abstract class Events extends \Module
 
 				return $strDetails;
 			};
+
+			$arrEvent['hasDetails'] = (\ContentModel::countPublishedByPidAndTable($id, 'tl_calendar_events') > 0);
 		}
 
 		// Get todays start and end timestamp

@@ -177,7 +177,22 @@ class FileSelector extends \Widget
 
 		$this->convertValuesToPaths();
 
-		return $this->renderFiletree(TL_ROOT . '/' . $folder, ($level * 20), $mount);
+		$blnProtected = false;
+		$strPath = $folder;
+
+		// Check for public parent folders (see #213)
+		while ($strPath != '' && $strPath != '.')
+		{
+			if (file_exists(TL_ROOT . '/' . $strPath . '/.htaccess'))
+			{
+				$blnProtected = true;
+				break;
+			}
+
+			$strPath = dirname($strPath);
+		}
+
+		return $this->renderFiletree(TL_ROOT . '/' . $folder, ($level * 20), $mount, $blnProtected);
 	}
 
 
@@ -300,7 +315,7 @@ class FileSelector extends \Widget
 			}
 
 			$protected = ($blnProtected === true || array_search('.htaccess', $content) !== false) ? true : false;
-			$folderImg = ($blnIsOpen && $countFiles > 0) ? ($protected ? 'folderOP.gif' : 'folderO.gif') : ($protected ? 'folderCP.gif' : 'folderC.gif');
+			$folderImg = $protected ? 'folderCP.gif' : 'folderC.gif';
 			$folderLabel = ($this->files || $this->filesOnly) ? '<strong>'.specialchars(basename($currentFolder)).'</strong>' : specialchars(basename($currentFolder));
 
 			// Add the current folder
@@ -359,16 +374,16 @@ class FileSelector extends \Widget
 				$return .= "\n    " . '<li class="tl_file toggle_select" onmouseover="Theme.hoverDiv(this, 1)" onmouseout="Theme.hoverDiv(this, 0)"><div class="tl_left" style="padding-left:'.($intMargin + $intSpacing).'px">';
 
 				// Generate thumbnail
-				if ($objFile->isImage && $objFile->height > 0)
+				if ($objFile->isImage && $objFile->viewHeight > 0)
 				{
-					$thumbnail .= ' <span class="tl_gray">(' . $objFile->width . 'x' . $objFile->height . ')</span>';
+					if ($objFile->width && $objFile->height)
+					{
+						$thumbnail .= ' <span class="tl_gray">(' . $objFile->width . 'x' . $objFile->height . ')</span>';
+					}
 
 					if (\Config::get('thumbnails') && ($objFile->isSvgImage || $objFile->height <= \Config::get('gdMaxImgHeight') && $objFile->width <= \Config::get('gdMaxImgWidth')))
 					{
-						$_height = ($objFile->height < 50) ? $objFile->height : 50;
-						$_width = (($objFile->width * $_height / $objFile->height) > 400) ? 90 : '';
-
-						$thumbnail .= '<br><img src="' . TL_FILES_URL . \Image::get($currentEncoded, $_width, $_height) . '" alt="" style="margin:0 0 2px -19px">';
+						$thumbnail .= '<br><img src="' . TL_FILES_URL . \Image::get($currentEncoded, 400, (($objFile->height && $objFile->height < 50) ? $objFile->height : 50), 'box') . '" alt="" style="margin:0 0 2px -19px">';
 					}
 				}
 

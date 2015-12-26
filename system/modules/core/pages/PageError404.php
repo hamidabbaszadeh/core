@@ -63,10 +63,10 @@ class PageError404 extends \Frontend
 			}
 
 			// Only redirect if there is no language fragment (see #4669)
-			if ($strRequest != '' && !preg_match('@^[a-z]{2}(\-[A-Z]{2})?/@', $strRequest))
+			if ($strRequest != '' && !preg_match('@^[a-z]{2}(-[A-Z]{2})?/@', $strRequest))
 			{
 				// Handle language fragments without trailing slash (see #7666)
-				if (preg_match('@^[a-z]{2}(\-[A-Z]{2})?$@', $strRequest))
+				if (preg_match('@^[a-z]{2}(-[A-Z]{2})?$@', $strRequest))
 				{
 					$this->redirect(($GLOBALS['TL_CONFIG']['rewriteURL'] ? '' : 'index.php/') . $strRequest . '/', 301);
 				}
@@ -93,6 +93,13 @@ class PageError404 extends \Frontend
 			/** @var \PageModel $objPage */
 			global $objPage;
 
+			// Die nicely if the page is a 404 page already (see #8060)
+			if ($objPage && $objPage->type == 'error_404')
+			{
+				header('HTTP/1.1 404 Not Found');
+				die_nicely('be_no_page', 'Page not found');
+			}
+
 			$objPage = $obj404->loadDetails();
 
 			/** @var \PageRegular $objHandler */
@@ -114,6 +121,6 @@ class PageError404 extends \Frontend
 			die_nicely('be_no_forward', 'Forward page not found');
 		}
 
-		$this->redirect($this->generateFrontendUrl($objNextPage->row(), null, $objRootPage->language), (($obj404->redirect == 'temporary') ? 302 : 301));
+		$this->redirect($this->generateFrontendUrl($objNextPage->loadDetails()->row(), null, $objRootPage->language, true), (($obj404->redirect == 'temporary') ? 302 : 301));
 	}
 }

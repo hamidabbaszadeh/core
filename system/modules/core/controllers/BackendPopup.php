@@ -92,15 +92,22 @@ class BackendPopup extends \Backend
 			$objFile->sendToBrowser();
 		}
 
+		/** @var \BackendTemplate|object $objTemplate */
+		$objTemplate = new \BackendTemplate('be_popup');
+
 		// Add the resource (see #6880)
 		if (($objModel = \FilesModel::findByPath($this->strFile)) === null)
 		{
-			$objModel = \Dbafs::addResource($this->strFile);
+			if (\Dbafs::shouldBeSynchronized($this->strFile))
+			{
+				$objModel = \Dbafs::addResource($this->strFile);
+			}
 		}
 
-		/** @var \BackendTemplate|object $objTemplate */
-		$objTemplate = new \BackendTemplate('be_popup');
-		$objTemplate->uuid = \StringUtil::binToUuid($objModel->uuid); // see #5211
+		if ($objModel !== null)
+		{
+			$objTemplate->uuid = \StringUtil::binToUuid($objModel->uuid); // see #5211
+		}
 
 		// Add the file info
 		if (is_dir(TL_ROOT . '/' . $this->strFile))

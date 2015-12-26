@@ -69,7 +69,7 @@ Request.Contao = new Class(
 		// Isolate scripts and execute them
 		if (json.content != '') {
 			json.content = json.content.stripScripts(function(script) {
-				json.javascript = script.replace(/<!--|\/\/-->|<!\[CDATA\[\/\/>|<!\]\]>/g, '');
+				json.javascript = script.replace(/<!--|\/\/-->|<!\[CDATA\[\/\/>|<!]]>/g, '');
 			});
 			if (json.javascript && this.options.evalScripts) {
 				Browser.exec(json.javascript);
@@ -109,10 +109,10 @@ Tips.Contao = new Class(
 
 	options: {
 		id: 'tip',
-		onShow: function(){
+		onShow: function() {
 			this.tip.setStyle('display', 'block');
 		},
-		onHide: function(){
+		onHide: function() {
 			this.tip.setStyle('display', 'none');
 		},
 		title: 'title',

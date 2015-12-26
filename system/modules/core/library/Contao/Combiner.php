@@ -269,7 +269,7 @@ class Combiner extends \System
 				foreach ($GLOBALS['TL_HOOKS']['getCombinedFile'] as $callback)
 				{
 					$this->import($callback[0]);
-					$content = $this->$callback[0]->$callback[1]($content, $strKey, $this->strMode, $arrFile);
+					$content = $this->{$callback[0]}->{$callback[1]}($content, $strKey, $this->strMode, $arrFile);
 				}
 			}
 
@@ -350,11 +350,13 @@ class Combiner extends \System
 
 			$arrOptions = array
 			(
+				'strictMath' => true,
 				'compress' => !\Config::get('debugMode'),
 				'import_dirs' => array(TL_ROOT . '/' . $strPath => $strPath)
 			);
 
-			$objParser = new \Less_Parser($arrOptions);
+			$objParser = new \Less_Parser();
+			$objParser->SetOptions($arrOptions);
 			$objParser->parse($content);
 
 			return $this->fixPaths($objParser->getCss(), $arrFile);

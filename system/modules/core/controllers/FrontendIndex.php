@@ -161,7 +161,7 @@ class FrontendIndex extends \Frontend
 		}
 
 		// If the page has an alias, it can no longer be called via ID (see #7661)
-		if ($objPage->alias != '' && $pageId == $objPage->id)
+		if ($objPage->alias != '' && preg_match('#^' . $objPage->id . '[$/.]#', \Environment::get('relativeRequest')))
 		{
 			$this->User->authenticate();
 			$objHandler = new $GLOBALS['TL_PTY']['error_404']();
@@ -363,7 +363,7 @@ class FrontendIndex extends \Frontend
 			foreach ($GLOBALS['TL_HOOKS']['getCacheKey'] as $callback)
 			{
 				$this->import($callback[0]);
-				$strCacheKey = $this->$callback[0]->$callback[1]($strCacheKey);
+				$strCacheKey = $this->{$callback[0]}->{$callback[1]}($strCacheKey);
 			}
 		}
 
@@ -465,7 +465,7 @@ class FrontendIndex extends \Frontend
 			foreach ($GLOBALS['TL_HOOKS']['modifyFrontendPage'] as $callback)
 			{
 				$this->import($callback[0]);
-				$strBuffer = $this->$callback[0]->$callback[1]($strBuffer, null);
+				$strBuffer = $this->{$callback[0]}->{$callback[1]}($strBuffer, null);
 			}
 		}
 

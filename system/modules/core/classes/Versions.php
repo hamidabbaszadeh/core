@@ -284,7 +284,7 @@ class Versions extends \Controller
 						if (is_array($callback))
 						{
 							$this->import($callback[0]);
-							$this->$callback[0]->$callback[1]($this->intPid, $this->strTable, $data, $intVersion);
+							$this->{$callback[0]}->{$callback[1]}($this->intPid, $this->strTable, $data, $intVersion);
 						}
 						elseif (is_callable($callback))
 						{
@@ -627,6 +627,13 @@ class Versions extends \Controller
 			);
 		}
 
+		// Adjust the URL of the "personal data" module (see #7987)
+		if (preg_match('/do=login(&|$)/', $strUrl))
+		{
+			$strUrl = preg_replace('/do=login(&|$)/', 'do=user$1', $strUrl);
+			$strUrl .= '&amp;act=edit&amp;id=' . $this->User->id . '&amp;rt=' . REQUEST_TOKEN;
+		}
+
 		// Correct the URL in "edit|override multiple" mode (see #7745)
 		$strUrl = preg_replace('/act=(edit|override)All/', 'act=edit&id=' . $this->intPid, $strUrl);
 
@@ -686,7 +693,12 @@ class Versions extends \Controller
 		}
 		elseif (!is_array(current($var)))
 		{
-			return implode(', ', ($binary ? array_map('StringUtil::binToUuid', $var) : $var));
+			if ($binary)
+			{
+				$var = array_map(function ($v) { return $v ? \StringUtil::binToUuid($v) : ''; }, $var);
+			}
+
+			return implode(', ', $var);
 		}
 		else
 		{

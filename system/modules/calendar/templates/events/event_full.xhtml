@@ -2,13 +2,13 @@
 <div class="event layout_full block<?= $this->class ?>">
 
   <h1><?= $this->title ?></h1>
-  <p class="info"><?= $this->date ?></p>
+  <p class="info"><?= $this->date ?><?php if ($this->time): ?>, <?= $this->time ?><?php endif; ?></p>
 
   <?php if ($this->recurring): ?>
     <p class="recurring"><?= $this->recurring ?><?php if ($this->until) echo ' ' . $this->until; ?>.</p>
   <?php endif; ?>
 
-  <?php if ($this->details): ?>
+  <?php if ($this->hasDetails): ?>
     <?= $this->details ?>
   <?php else: ?>
     <div class="ce_text block">

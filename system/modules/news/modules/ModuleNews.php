@@ -88,8 +88,8 @@ abstract class ModuleNews extends \Module
 
 		/** @var \FrontendTemplate|object $objTemplate */
 		$objTemplate = new \FrontendTemplate($this->news_template);
-
 		$objTemplate->setData($objArticle->row());
+
 		$objTemplate->class = (($objArticle->cssClass != '') ? ' ' . $objArticle->cssClass : '') . $strClass;
 		$objTemplate->newsHeadline = $objArticle->headline;
 		$objTemplate->subHeadline = $objArticle->subheadline;
@@ -100,10 +100,14 @@ abstract class ModuleNews extends \Module
 		$objTemplate->archive = $objArticle->getRelated('pid');
 		$objTemplate->count = $intCount; // see #5708
 		$objTemplate->text = '';
+		$objTemplate->hasText = false;
+		$objTemplate->hasTeaser = false;
 
 		// Clean the RTE output
 		if ($objArticle->teaser != '')
 		{
+			$objTemplate->hasTeaser = true;
+
 			if ($objPage->outputFormat == 'xhtml')
 			{
 				$objTemplate->teaser = \StringUtil::toXhtml($objArticle->teaser);
@@ -120,6 +124,7 @@ abstract class ModuleNews extends \Module
 		if ($objArticle->source != 'default')
 		{
 			$objTemplate->text = true;
+			$objTemplate->hasText = true;
 		}
 
 		// Compile the news text
@@ -142,6 +147,8 @@ abstract class ModuleNews extends \Module
 
 				return $strText;
 			};
+
+			$objTemplate->hasText = (\ContentModel::countPublishedByPidAndTable($objArticle->id, 'tl_news') > 0);
 		}
 
 		$arrMeta = $this->getMetaFields($objArticle);
@@ -204,7 +211,7 @@ abstract class ModuleNews extends \Module
 			foreach ($GLOBALS['TL_HOOKS']['parseArticles'] as $callback)
 			{
 				$this->import($callback[0]);
-				$this->$callback[0]->$callback[1]($objTemplate, $objArticle->row(), $this);
+				$this->{$callback[0]}->{$callback[1]}($objTemplate, $objArticle->row(), $this);
 			}
 		}
 
@@ -393,7 +400,7 @@ abstract class ModuleNews extends \Module
 							$this->generateNewsUrl($objArticle, $blnAddArchive),
 							specialchars(sprintf($GLOBALS['TL_LANG']['MSC']['readMore'], $objArticle->headline), true),
 							$strLink,
-							($blnIsReadMore ? ' <span class="invisible">'.$objArticle->headline.'</span>' : ''));
+							($blnIsReadMore ? '<span class="invisible"> '.$objArticle->headline.'</span>' : ''));
 		}
 
 		// Encode e-mail addresses

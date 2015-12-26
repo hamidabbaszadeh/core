@@ -30,6 +30,8 @@ class BackendInstall extends \Backend
 	 */
 	public function __construct()
 	{
+		// No parent::__construct() here
+
 		$this->import('Config');
 		$this->import('Session');
 
@@ -452,6 +454,12 @@ class BackendInstall extends \Backend
 					continue;
 				}
 
+				// The port number must not be empty (see #7950)
+				if ($strKey == 'dbPort' && \Input::post($strKey, true) == '')
+				{
+					\Input::setPost($strKey, 3306);
+				}
+
 				\Config::persist($strKey, \Input::post($strKey, true));
 			}
 
@@ -723,7 +731,7 @@ class BackendInstall extends \Backend
 			elseif (\Input::post('FORM_SUBMIT') == 'tl_admin')
 			{
 				// Do not allow special characters in usernames
-				if (preg_match('/[#\(\)\/<=>]/', \Input::post('username', true)))
+				if (preg_match('/[#()\/<=>]/', \Input::post('username', true)))
 				{
 					$this->Template->usernameError = $GLOBALS['TL_LANG']['ERR']['extnd'];
 				}

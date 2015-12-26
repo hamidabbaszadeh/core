@@ -157,7 +157,7 @@ class Installer extends \Controller
 					{
 						$return['ALTER_ADD'][] = 'ALTER TABLE `'.$k.'` ADD '.$vv.';';
 					}
-					elseif ($sql_current[$k]['TABLE_FIELDS'][$kk] != $vv)
+					elseif ($sql_current[$k]['TABLE_FIELDS'][$kk] != $vv && $sql_current[$k]['TABLE_FIELDS'][$kk] != str_replace(' COLLATE ' . \Config::get('dbCollation'), '', $vv))
 					{
 						$return['ALTER_CHANGE'][] = 'ALTER TABLE `'.$k.'` CHANGE `'.$kk.'` '.$vv.';';
 					}
@@ -244,7 +244,7 @@ class Installer extends \Controller
 			foreach ($GLOBALS['TL_HOOKS']['sqlCompileCommands'] as $callback)
 			{
 				$this->import($callback[0]);
-				$return = $this->$callback[0]->$callback[1]($return);
+				$return = $this->{$callback[0]}->{$callback[1]}($return);
 			}
 		}
 
@@ -312,7 +312,7 @@ class Installer extends \Controller
 			foreach ($GLOBALS['TL_HOOKS']['sqlGetFromDca'] as $callback)
 			{
 				$this->import($callback[0]);
-				$return = $this->$callback[0]->$callback[1]($return);
+				$return = $this->{$callback[0]}->{$callback[1]}($return);
 			}
 		}
 
@@ -407,7 +407,7 @@ class Installer extends \Controller
 			foreach ($GLOBALS['TL_HOOKS']['sqlGetFromFile'] as $callback)
 			{
 				$this->import($callback[0]);
-				$return = $this->$callback[0]->$callback[1]($return);
+				$return = $this->{$callback[0]}->{$callback[1]}($return);
 			}
 		}
 
@@ -537,7 +537,7 @@ class Installer extends \Controller
 			foreach ($GLOBALS['TL_HOOKS']['sqlGetFromDB'] as $callback)
 			{
 				$this->import($callback[0]);
-				$return = $this->$callback[0]->$callback[1]($return);
+				$return = $this->{$callback[0]}->{$callback[1]}($return);
 			}
 		}
 

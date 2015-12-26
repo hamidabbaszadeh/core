@@ -408,7 +408,7 @@ class tl_comments extends Backend
 					{
 						$this->import($callback[0]);
 
-						if ($this->$callback[0]->$callback[1]($intParent, $strSource) === true)
+						if ($this->{$callback[0]}->{$callback[1]}($intParent, $strSource) === true)
 						{
 							Cache::set($strKey, true);
 							break;
@@ -511,7 +511,7 @@ class tl_comments extends Backend
 					{
 						$this->import($callback[0]);
 
-						if (($tmp = $this->$callback[0]->$callback[1]($arrRow)) != '')
+						if (($tmp = $this->{$callback[0]}->{$callback[1]}($arrRow)) != '')
 						{
 							$title .= $tmp;
 							break;
@@ -607,7 +607,7 @@ class tl_comments extends Backend
 			return Image::getHtml($icon) . ' ';
 		}
 
-		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
+		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label, 'data-state="' . ($row['published'] ? 1 : 0) . '"').'</a> ';
 	}
 
 
@@ -620,12 +620,18 @@ class tl_comments extends Backend
 	 */
 	public function toggleVisibility($intId, $blnVisible, DataContainer $dc=null)
 	{
-		// Check permissions to edit
+		// Set the ID and action
 		Input::setGet('id', $intId);
 		Input::setGet('act', 'toggle');
+
+		if ($dc)
+		{
+			$dc->id = $intId; // see #8043
+		}
+
 		$this->checkPermission();
 
-		// Check permissions to publish
+		// Check the field access
 		if (!$this->User->hasAccess('tl_comments::published', 'alexf'))
 		{
 			$this->log('Not enough permissions to publish/unpublish comment ID "'.$intId.'"', __METHOD__, TL_ERROR);
@@ -643,7 +649,7 @@ class tl_comments extends Backend
 				if (is_array($callback))
 				{
 					$this->import($callback[0]);
-					$blnVisible = $this->$callback[0]->$callback[1]($blnVisible, ($dc ?: $this));
+					$blnVisible = $this->{$callback[0]}->{$callback[1]}($blnVisible, ($dc ?: $this));
 				}
 				elseif (is_callable($callback))
 				{
